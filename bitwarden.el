@@ -441,10 +441,18 @@ results."
                                        ;; `bitwarden-search-filter-username'
                                        ;; tests for it
          (user (gethash "username" login))
-         (pass (gethash "password" login)))
-    `(:host ,host
-      :user ,user
-      :secret (lambda () ,pass))))
+         (pass (gethash "password" login))
+         (fields (gethash "fields" account))
+         (result (list :host host :user user :secret `(lambda () ,pass))))
+    (if fields
+        (seq-reduce (lambda (acc field)
+                      (let* ((name (gethash "name" field))
+                             (value (gethash "value" field))
+                             (key (intern (concat ":field_" name))))
+                        (append acc (list key `(lambda () ,value)))))
+                    fields
+                    result)
+      result)))
 
 (defvar bitwarden-auth-source-backend
   (auth-source-backend :type 'bitwarden
